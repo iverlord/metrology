@@ -3,7 +3,7 @@
 #include "QFileDialog"
 #include "QFile"
 #include "QMessageBox"
-#include "cmath"
+#include "qmath.h"
 
 MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWindow)
 {
@@ -24,6 +24,7 @@ void MainWindow::on_open_triggered()
     if(open.exec())                             //Показыаем окно
     {
         QFile file(open.selectedFiles().at(0));
+        ui->source->clear();
         if(file.open(QIODevice::ReadOnly | QIODevice::Text))
         {
             while(!file.atEnd())
@@ -88,6 +89,7 @@ void MainWindow::on_processButton_clicked()
     QList<float> ta;
     float taF;
     QString deleted = "\n\nОтброшены: ";
+    QString calc = "\n\nПромежуточные вычисления: ";
     switch (ui->comboBox->currentIndex())
     {
     case 0:
@@ -125,7 +127,7 @@ void MainWindow::on_processButton_clicked()
                 min = value;
                 imin = i;
             }
-            sum =+ value;
+            sum += value;
         }
         else                                    //Если встретилось не число. показыаем информацонное сообщение
         {
@@ -137,26 +139,34 @@ void MainWindow::on_processButton_clicked()
         }
     }
     float avg = sum/lst.count();
+    calc.append("\nСумма: " + QString::number(sum));
+    calc.append("\nСреднее: " + QString::number(avg));
+    calc.append("\nМинимум: " + QString::number(min));
+    calc.append("\nМаксимум: " + QString::number(max));
     sum = 0;
     foreach (QString i, lst)
     {
-        sum =+ pow(i.toFloat() - avg, 2);
+        sum += qPow(i.toFloat() - avg, 2);
     }
     double quadDev = sqrt(sum/lst.count());
-    float taMin = abs(min - avg)/quadDev;
-    float taMax = abs(max - avg)/quadDev;
+    calc.append("\nСреднеквадратичное отклонение: " + QString::number(quadDev));
+    double taMin = qAbs(min - avg)/quadDev;
+    double taMax = qAbs(max - avg)/quadDev;
+    calc.append("\nt минимума: " + QString::number(taMin));
+    calc.append("\nt максимума: " + QString::number(taMax));
     if(lst.count() <= 25)
     {
-    if(taMax > ta.at(lst.count() - 3))
-    {
-        lst.removeAt(imax);
-        deleted.append(QString::number(max) + " ");
-    }
-    if(taMin > ta.at((lst.count() - 3)))
-    {
-        lst.removeAt(imin);
-        deleted.append(QString::number(min) + " ");
-    }
+        if(taMax > ta.at(lst.count() - 3))
+        {
+            lst.removeAt(imax);
+            deleted.append(QString::number(max) + " ");
+        }
+        if(taMin > ta.at((lst.count() - 3)))
+        {
+            lst.removeAt(imin);
+            deleted.append(QString::number(min) + " ");
+        }
+        calc.append("\nta: " + QString::number(ta.at(lst.count() - 3)));
     }
 
     else
@@ -171,10 +181,12 @@ void MainWindow::on_processButton_clicked()
             lst.removeAt(imin);
             deleted.append(QString::number(min) + " ");
         }
+        calc.append("\nta: " + QString::number(taF));
     }
 
     text = lst.join("\n");
     text.append(deleted);
+    text.append(calc);
     if(containComma)
     {
         text = text.replace(".",",");
